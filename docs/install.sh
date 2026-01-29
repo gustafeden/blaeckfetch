@@ -255,22 +255,7 @@ main() {
     ERROR_MSG=""
     FINISHED=0
 
-    # Calculate render block size upfront
-    local render_lines=14  # base: header(3) + steps(5) + box(4) + padding(2)
-    if [[ -z "$EXISTING_VERSION" ]]; then
-        render_lines=24  # fresh install: add get started + config + more
-    elif [[ "$EXISTING_VERSION" != "rsfetch $VERSION" ]]; then
-        render_lines=17  # update: add what's new link
-    fi
-    # Add lines for PATH warning if needed
-    local in_path=0
-    local d
-    while IFS=: read -rd: d || [[ -n "$d" ]]; do
-        [[ "$d" == "$INSTALL_DIR" ]] && in_path=1
-    done <<< "$PATH:"
-    [[ $in_path -eq 0 ]] && (( render_lines += 4 ))
-
-    bk_render_init "$render_lines"
+    bk_render_init 8  # header(3) + steps(5)
     trap 'bk_render_done' EXIT
 
     # Step 0: Platform
@@ -353,6 +338,22 @@ main() {
     fi
 
     FINISHED=1
+
+    # Resize render block for post-install content
+    local final_lines=14  # base: header(3) + steps(5) + box(4) + padding(2)
+    if [[ -z "$EXISTING_VERSION" ]]; then
+        final_lines=24  # fresh install: get started + config + more
+    elif [[ "$EXISTING_VERSION" != "rsfetch $VERSION" ]]; then
+        final_lines=17  # update: what's new link
+    fi
+    local in_path=0
+    local d
+    while IFS=: read -rd: d || [[ -n "$d" ]]; do
+        [[ "$d" == "$INSTALL_DIR" ]] && in_path=1
+    done <<< "$PATH:"
+    [[ $in_path -eq 0 ]] && (( final_lines += 4 ))
+
+    bk_render_resize "$final_lines"
     render_ui
 }
 
