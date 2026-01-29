@@ -255,8 +255,22 @@ main() {
     ERROR_MSG=""
     FINISHED=0
 
-    # Reserve render lines — start small for the step list
-    bk_render_init 8
+    # Calculate render block size upfront
+    local render_lines=14  # base: header(3) + steps(5) + box(4) + padding(2)
+    if [[ -z "$EXISTING_VERSION" ]]; then
+        render_lines=24  # fresh install: add get started + config + more
+    elif [[ "$EXISTING_VERSION" != "rsfetch $VERSION" ]]; then
+        render_lines=17  # update: add what's new link
+    fi
+    # Add lines for PATH warning if needed
+    local in_path=0
+    local d
+    while IFS=: read -rd: d || [[ -n "$d" ]]; do
+        [[ "$d" == "$INSTALL_DIR" ]] && in_path=1
+    done <<< "$PATH:"
+    [[ $in_path -eq 0 ]] && (( render_lines += 4 ))
+
+    bk_render_init "$render_lines"
     trap 'bk_render_done' EXIT
 
     # Step 0: Platform
@@ -300,25 +314,6 @@ main() {
     size_mb="$(awk "BEGIN { printf \"%.1f\", $size_bytes / 1048576 }")"
     STEP_STATUS[2]="done"
     STEP_DETAIL[2]="rsfetch v${VERSION} (${size_mb} MB)"
-
-    # Expand render block for post-install content
-    # Calculate how many lines we'll need based on scenario
-    local extra_lines=14  # base: header(3) + steps(5) + box(4) + padding(2)
-    if [[ -z "$EXISTING_VERSION" ]]; then
-        extra_lines=24  # fresh install: add get started + config + more
-    elif [[ "$EXISTING_VERSION" != "rsfetch $VERSION" ]]; then
-        extra_lines=17  # update: add what's new link
-    fi
-    # Add lines for PATH warning if needed
-    local in_path=0
-    local d
-    while IFS=: read -rd: d || [[ -n "$d" ]]; do
-        [[ "$d" == "$INSTALL_DIR" ]] && in_path=1
-    done <<< "$PATH:"
-    [[ $in_path -eq 0 ]] && (( extra_lines += 4 ))
-
-    bk_render_done
-    bk_render_init "$extra_lines"
 
     render_ui
 
