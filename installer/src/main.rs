@@ -186,6 +186,8 @@ fn build_ui(state: &InstallerState, spinner_frame: usize) -> Element {
                 });
             }
         }
+
+        rows.push(element! { Text(content: "") });
     }
 
     Element::node::<Box>(

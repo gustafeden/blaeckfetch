@@ -623,7 +623,7 @@ dependencies = [
 
 [[package]]
 name = "rsfetch-installer"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "blaeck",
  "flate2",

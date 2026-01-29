@@ -2,7 +2,7 @@
 set -e
 
 # rsfetch installer bootstrap
-# Usage: curl -fsSL https://raw.githubusercontent.com/gustafeden/rsfetch/main/install.sh | sh
+# Usage: curl -fsSL https://gustafeden.github.io/rsfetch/install.sh | sh
 
 REPO="gustafeden/rsfetch"
 INSTALLER_NAME="rsfetch-installer"

@@ -39,7 +39,7 @@ A fast system fetch display for your terminal, written in Rust. Powered by [blae
 No Rust required — prebuilt binaries for macOS and Linux:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/gustafeden/rsfetch/main/install.sh | sh
+curl -fsSL https://gustafeden.github.io/rsfetch/install.sh | sh
 ```
 
 Supports macOS (Intel + Apple Silicon) and Linux (x86_64 + aarch64). The installer downloads a prebuilt binary to `~/.local/bin` (or the first writable directory in your `$PATH` under `$HOME`).
@@ -47,7 +47,7 @@ Supports macOS (Intel + Apple Silicon) and Linux (x86_64 + aarch64). The install
 To install a specific version:
 
 ```sh
-RSFETCH_VERSION=0.1.0 curl -fsSL https://raw.githubusercontent.com/gustafeden/rsfetch/main/install.sh | sh
+RSFETCH_VERSION=0.1.0 curl -fsSL https://gustafeden.github.io/rsfetch/install.sh | sh
 ```
 
 Or with cargo (requires Rust):
