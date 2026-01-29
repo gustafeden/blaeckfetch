@@ -55,8 +55,7 @@ fn detect_linux() -> Logo {
 pub fn apple() -> Logo {
     Logo {
         name: "apple",
-        art: "\
-                    'c.
+        art: "                    'c.
                  ,xNMM.
                .OMMMMo
                OMMM0,
@@ -79,8 +78,7 @@ pub fn apple() -> Logo {
 pub fn tux() -> Logo {
     Logo {
         name: "linux",
-        art: "\
-        a8888b.
+        art: "        a8888b.
        d888888b.
        8P\"YP\"Y88
        8|o||o|88
@@ -102,8 +100,7 @@ pub fn tux() -> Logo {
 pub fn ubuntu() -> Logo {
     Logo {
         name: "ubuntu",
-        art: "\
-             .-/+oossssoo+/-.
+        art: "             .-/+oossssoo+/-.
          `:+ssssssssssssssssss+:`
        -+ssssssssssssssssssyyssss+-
      .ossssssssssssssssssdMMMNysssso.
@@ -129,8 +126,7 @@ pub fn ubuntu() -> Logo {
 pub fn arch() -> Logo {
     Logo {
         name: "arch",
-        art: "\
-                   -`
+        art: "                   -`
                   .o+`
                  `ooo/
                 `+oooo:
@@ -155,8 +151,7 @@ pub fn arch() -> Logo {
 pub fn debian() -> Logo {
     Logo {
         name: "debian",
-        art: "\
-       _,met$$$$$gg.
+        art: "       _,met$$$$$gg.
     ,g$$$$$$$$$$$$$$$P.
   ,g$$P\"     \"\"\"Y$$.\"$.
  ,$$P'              `$$$.
@@ -179,8 +174,7 @@ pub fn debian() -> Logo {
 pub fn fedora() -> Logo {
     Logo {
         name: "fedora",
-        art: "\
-             .',;::::;,'.
+        art: "             .',;::::;,'.
          .';:cccccccccccc:;,.
       .;cccccccccccccccccccccc;.
     .:cccccccccccccccccccccccccc:.
@@ -203,8 +197,7 @@ pub fn fedora() -> Logo {
 pub fn generic() -> Logo {
     Logo {
         name: "generic",
-        art: "\
-   ___  ___
+        art: "   ___  ___
   |   \\/   |
   |        |
   |  /\\/\\  |

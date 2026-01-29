@@ -346,9 +346,9 @@ fn get_resolution() -> String {
             }
 
             let mut resolutions = Vec::new();
-            for i in 0..count as usize {
-                let w = CGDisplayPixelsWide(displays[i]);
-                let h = CGDisplayPixelsHigh(displays[i]);
+            for &display in displays.iter().take(count as usize) {
+                let w = CGDisplayPixelsWide(display);
+                let h = CGDisplayPixelsHigh(display);
                 if w > 0 && h > 0 {
                     resolutions.push(format!("{}x{}", w, h));
                 }

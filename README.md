@@ -55,14 +55,18 @@ cargo build --release
 rsfetch [OPTIONS]
 
 Options:
-  -c, --color <COLOR>  Color theme [default: green]
-  -l, --logo <LOGO>    Logo to display
-      --no-logo        Hide the logo
-      --json           Output as JSON
-      --clear-cache    Clear the cache and re-gather all info
-  -h, --help           Print help
-  -V, --version        Print version
+  -c, --color <COLOR>    Color theme (green, cyan, red, magenta, yellow, blue, mono)
+  -l, --logo <LOGO>      Logo to display (apple, linux, ubuntu, arch, debian, fedora, none)
+      --no-logo          Hide the logo
+      --json             Output as JSON
+      --clear-cache      Clear the cache and re-gather all info
+      --config <PATH>    Path to config file
+      --print-config     Print default config to stdout
+  -h, --help             Print help
+  -V, --version          Print version
 ```
+
+CLI flags override config file values.
 
 ### Color themes
 
@@ -89,6 +93,58 @@ rsfetch --no-logo
 ```sh
 rsfetch --json
 ```
+
+### Configuration
+
+rsfetch loads config from `~/.config/rsfetch/config.toml`. Generate a default config:
+
+```sh
+rsfetch --print-config > ~/.config/rsfetch/config.toml
+```
+
+Example config:
+
+```toml
+color = "cyan"
+logo = "arch"
+palette = false
+separator = "="
+
+# Show only these fields, in this order
+fields = [
+    "OS",
+    "CPU",
+    "Memory",
+    "Disk (/)",
+]
+
+# Rename fields
+[labels]
+"Disk (/)" = "Disk"
+"Local IP" = "IP"
+
+# Custom colors (named or RGB)
+[colors]
+title = [255, 165, 0]
+label = "cyan"
+```
+
+Config options:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `color` | string | Color theme name |
+| `logo` | string | Logo name or `"auto"` |
+| `palette` | bool | Show color palette (default: true) |
+| `separator` | string | Separator character (default: `"-"`) |
+| `fields` | list | Fields to show, in order |
+| `labels` | table | Rename any field label |
+| `colors.title` | string/rgb | Title color |
+| `colors.label` | string/rgb | Label color |
+| `colors.separator` | string/rgb | Separator color |
+| `colors.logo` | string/rgb | Logo color |
+
+Color values can be a named color (`"cyan"`, `"light_red"`, etc.) or an RGB array (`[255, 165, 0]`).
 
 ## Fields
 

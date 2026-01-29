@@ -3,12 +3,15 @@ use blaeck::Blaeck;
 use std::io;
 
 use crate::color::Theme;
+use crate::config::Config;
 use crate::info::SystemInfo;
 
-pub fn render(info: &SystemInfo, logo: &str, theme: &Theme) -> io::Result<()> {
+pub fn render(info: &SystemInfo, logo: &str, theme: &Theme, cfg: &Config) -> io::Result<()> {
     let title = info.title();
-    let separator = "-".repeat(title.len());
-    let fields = info.fields();
+    let sep_char = cfg.separator_char();
+    let separator = sep_char.repeat(title.len());
+    let all_fields = info.fields();
+    let active = cfg.active_fields();
 
     let mut info_elements: Vec<Element> = Vec::new();
 
@@ -20,42 +23,47 @@ pub fn render(info: &SystemInfo, logo: &str, theme: &Theme) -> io::Result<()> {
         Text(content: separator, color: theme.separator)
     });
 
-    // Info fields
-    for (label, value) in &fields {
-        info_elements.push(element! {
-            Box(flex_direction: FlexDirection::Row) {
-                Text(content: format!("{}: ", label), color: theme.label, bold: true)
-                Text(content: value.to_string())
-            }
-        });
+    // Info fields — filtered and ordered by config
+    for key in &active {
+        if let Some((_, value)) = all_fields.iter().find(|(k, _)| *k == key.as_str()) {
+            let label = cfg.label_for(key);
+            info_elements.push(element! {
+                Box(flex_direction: FlexDirection::Row) {
+                    Text(content: format!("{}: ", label), color: theme.label, bold: true)
+                    Text(content: value.to_string())
+                }
+            });
+        }
     }
 
     // Color palette
-    info_elements.push(element! { Text(content: "") });
-    info_elements.push(element! {
-        Box(flex_direction: FlexDirection::Row) {
-            Text(content: "███", color: Color::Black)
-            Text(content: "███", color: Color::Red)
-            Text(content: "███", color: Color::Green)
-            Text(content: "███", color: Color::Yellow)
-            Text(content: "███", color: Color::Blue)
-            Text(content: "███", color: Color::Magenta)
-            Text(content: "███", color: Color::Cyan)
-            Text(content: "███", color: Color::White)
-        }
-    });
-    info_elements.push(element! {
-        Box(flex_direction: FlexDirection::Row) {
-            Text(content: "███", color: Color::DarkGray)
-            Text(content: "███", color: Color::LightRed)
-            Text(content: "███", color: Color::LightGreen)
-            Text(content: "███", color: Color::LightYellow)
-            Text(content: "███", color: Color::LightBlue)
-            Text(content: "███", color: Color::LightMagenta)
-            Text(content: "███", color: Color::LightCyan)
-            Text(content: "███", color: Color::White)
-        }
-    });
+    if cfg.show_palette() {
+        info_elements.push(element! { Text(content: "") });
+        info_elements.push(element! {
+            Box(flex_direction: FlexDirection::Row) {
+                Text(content: "███", color: Color::Black)
+                Text(content: "███", color: Color::Red)
+                Text(content: "███", color: Color::Green)
+                Text(content: "███", color: Color::Yellow)
+                Text(content: "███", color: Color::Blue)
+                Text(content: "███", color: Color::Magenta)
+                Text(content: "███", color: Color::Cyan)
+                Text(content: "███", color: Color::White)
+            }
+        });
+        info_elements.push(element! {
+            Box(flex_direction: FlexDirection::Row) {
+                Text(content: "███", color: Color::DarkGray)
+                Text(content: "███", color: Color::LightRed)
+                Text(content: "███", color: Color::LightGreen)
+                Text(content: "███", color: Color::LightYellow)
+                Text(content: "███", color: Color::LightBlue)
+                Text(content: "███", color: Color::LightMagenta)
+                Text(content: "███", color: Color::LightCyan)
+                Text(content: "███", color: Color::White)
+            }
+        });
+    }
 
     let ui = Element::node::<Box>(
         BoxProps {

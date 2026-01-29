@@ -1,11 +1,13 @@
 mod cache;
 mod color;
+mod config;
 mod info;
 mod logo;
 mod render;
 
 use clap::Parser;
 use color::Theme;
+use config::Config;
 use info::SystemInfo;
 
 /// A fast system fetch display, written in Rust.
@@ -13,8 +15,8 @@ use info::SystemInfo;
 #[command(name = "rsfetch", version, about)]
 struct Args {
     /// Color theme (green, cyan, red, magenta, yellow, blue, mono)
-    #[arg(short, long, default_value = "green")]
-    color: String,
+    #[arg(short, long)]
+    color: Option<String>,
 
     /// Logo to display (apple, linux, ubuntu, arch, debian, fedora, none)
     #[arg(short, long)]
@@ -31,14 +33,29 @@ struct Args {
     /// Clear the cache and re-gather all info
     #[arg(long)]
     clear_cache: bool,
+
+    /// Path to config file
+    #[arg(long)]
+    config: Option<String>,
+
+    /// Print default config to stdout
+    #[arg(long)]
+    print_config: bool,
 }
 
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
 
+    if args.print_config {
+        print!("{}", config::generate_default());
+        return Ok(());
+    }
+
     if args.clear_cache {
         cache::clear();
     }
+
+    let cfg = Config::load(args.config.as_deref());
 
     let info = SystemInfo::gather();
 
@@ -47,15 +64,41 @@ fn main() -> std::io::Result<()> {
         return Ok(());
     }
 
-    let theme = Theme::by_name(&args.color);
+    // CLI flags override config values
+    let color_name = args
+        .color
+        .or(cfg.color.clone())
+        .unwrap_or_else(|| "green".into());
 
-    let logo = if args.no_logo {
-        logo::by_name("none")
-    } else if let Some(name) = &args.logo {
-        logo::by_name(name)
+    let mut theme = Theme::by_name(&color_name);
+
+    // Apply custom color overrides from config
+    if let Some(colors) = &cfg.colors {
+        if let Some(c) = &colors.title {
+            theme.title = c.to_color();
+        }
+        if let Some(c) = &colors.label {
+            theme.label = c.to_color();
+        }
+        if let Some(c) = &colors.separator {
+            theme.separator = c.to_color();
+        }
+        if let Some(c) = &colors.logo {
+            theme.logo = c.to_color();
+        }
+    }
+
+    let logo_name = if args.no_logo {
+        Some("none".to_string())
     } else {
-        logo::detect()
+        args.logo.or(cfg.logo.clone())
     };
 
-    render::render(&info, logo.art, &theme)
+    let logo = match logo_name.as_deref() {
+        Some("none" | "off") => logo::by_name("none"),
+        Some("auto") | None => logo::detect(),
+        Some(name) => logo::by_name(name),
+    };
+
+    render::render(&info, logo.art, &theme, &cfg)
 }
