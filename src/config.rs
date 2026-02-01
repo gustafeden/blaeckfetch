@@ -14,6 +14,25 @@ pub struct Config {
     pub fields: Option<Vec<String>>,
     pub labels: Option<HashMap<String, String>>,
     pub colors: Option<ColorsConfig>,
+    pub boot: Option<BootConfig>,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct BootConfig {
+    pub image: Option<String>,
+    pub stretch: Option<String>,
+    pub transparency: Option<u8>,
+    pub width: Option<u16>,
+    pub height: Option<u16>,
+    pub timeout: Option<u64>,
+    pub star_brightness: Option<u8>,
+    pub render_mode: Option<String>,
+    pub align: Option<String>,
+    pub min_width: Option<u16>,
+    pub min_height: Option<u16>,
+    pub max_width: Option<u16>,
+    pub max_height: Option<u16>,
 }
 
 #[derive(Deserialize, Default)]
@@ -187,6 +206,25 @@ pub fn generate_default() -> String {
 # label = [100, 200, 255]
 # separator = "dark_gray"
 # logo = "green"
+
+# Boot sequence mode (retro console inspired)
+# Run with: rsfetch --boot
+# Use --center or --left to control alignment.
+# Without an image, shows a procedural starfield with earth and moon.
+# [boot]
+# image = "~/.config/rsfetch/space.png"   # Background image (PNG/JPEG)
+# stretch = "fill"                         # fill (stretch), fit (letterbox), or crop
+# transparency = 0                         # 0 = opaque black bg, 1-255 = dark pixels become transparent
+# width = 68                               # Canvas width in columns (default: auto from image or 68)
+# height = 23                              # Canvas height in rows (default: auto from image or 23)
+# timeout = 120                            # Seconds before auto-closing (triggers collapse animation)
+# star_brightness = 30                     # Star twinkle detection threshold (0-255)
+# render_mode = "auto"                     # auto (detect terminal), image (force iTerm2), ascii (force half-block)
+# align = "left"                           # left, center, or right (CLI --left/--center/--right override)
+# min_width = 40                           # Minimum canvas width in columns
+# min_height = 12                          # Minimum canvas height in rows
+# max_width = 120                          # Maximum canvas width in columns
+# max_height = 40                          # Maximum canvas height in rows
 "#
     .to_string()
 }

@@ -16,3 +16,5 @@ serde_json = "1"
 sysinfo = "0.32"
 toml = "0.8"
 libc = "0.2"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+base64 = "0.22"

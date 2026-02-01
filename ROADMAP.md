@@ -1,135 +1,268 @@
 # rsfetch roadmap
 
-## Animated logo on terminal startup
+## v0.2 — Boot Sequence Mode
 
-Make the ASCII logo animate (e.g. spinning, color cycling, pulsing) when
-the terminal opens, then freeze the moment the user starts interacting.
+A Sega CD / retro console inspired boot screen for your terminal.
+Inline (not fullscreen), animated, interactive. Feels like powering on
+a console from the early 90s.
 
-### Approach A — Foreground blocking (recommended)
+### What you see
 
-```zsh
-# .zshrc
-rsfetch --animate   # blocks until keypress, then exits
+```
+╭──────────────────────────────────────────────────────────────────╮
+│  macOS 15.5 · M3 Pro · 29/36 GiB · 33d up                      │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ·          ✦                    ·            .         ·        │
+│        .          ·    .                  ✦         .            │
+│    ·  ╭───╮                                                     │
+│   ╭───│   │  .        ·               .        ▄▄▄▄▄▄▄▄▄       │
+│   │   ╰───╯       .              ·         ▄████████████████    │
+│     ·       .                           ▄██████████████████████ │
+│  .      ·             ╔╦╗╔═╗╔═╗╔═╗╔═╗  ████████████████████████│
+│              ·        ║║║╠═╣║  ║ ║╚═╗  ████████████████████████│
+│   .     ·        .    ╩ ╩╩ ╩╚═╝╚═╝╚═╝  ▀██████████████████████│
+│       .                  ╔╗ ╔═╗ ╔═╗        ▀████████████████    │
+│  ·          .     ·      ║║ ╠╣  ╠╣            ▀▀▀▀▀▀▀▀▀        │
+│         ·            .   ╚╝ ╚   ╚          ·        .           │
+│    .          ·   .            .       ·           ·             │
+│         .              ·           .          .         ·        │
+│                                                                  │
+├──────────────────────────────────────────────────────────────────┤
+│                     press any key to start                       │
+╰──────────────────────────────────────────────────────────────────╯
 ```
 
-rsfetch owns the terminal during animation. It renders the full fetch
-display and loops the logo animation using blaeck's re-rendering (cursor
-positioning to overwrite just the logo region). It reads `/dev/tty` in raw
-mode (no echo, no line buffering) waiting for any keypress. On first
-keypress it renders the final static frame, restores the terminal, and
-exits. The shell prompt appears after exit.
+### Layers (back to front)
 
-**Pros:**
-- Simple — no background process, no stdin juggling, no orphaned PIDs
-- No cursor coordinate issues since rsfetch owns the whole screen
-- Clean exit, shell takes over naturally
-- Works on every terminal
+1. **Border** — rounded box (`╭╮╰╯│─`), static, dim white or theme color
+2. **Status bar** — top row inside border, compact system info, dim
+3. **Starfield** — procedurally scattered stars (`.` `·` `*` `✦`),
+   twinkling (random brightness/color shifts each frame)
+4. **Earth** — bottom-right corner, static ASCII art using RGB block
+   characters (`▄█▀`), earthy palette (browns, blues, greens)
+5. **Moon** — upper-left area, small static ASCII circle, pale grey/white
+6. **OS title** — centered, large figlet-style double-line text
+   ("MacOS 15.5" or hostname), scrolling gradient animation
+7. **Footer** — "press any key to start", blinking (visible/hidden toggle
+   every 30 frames)
 
-**Cons:**
-- Shell prompt doesn't appear until animation stops
-- Can't type commands while the logo is still animating
+### Animation timeline
 
-**Implementation:**
-1. Add `--animate` flag (clap)
-2. After initial render, enter animation loop:
-   - Advance logo frame (rotate, spin, color shift, etc.)
-   - Re-render only the logo region using cursor positioning
-   - Poll `/dev/tty` with `termios` raw mode, ~80ms frame interval
-   - On any keypress or timeout: break
-3. Render final static frame
-4. Restore terminal (`termios` original settings)
-5. Exit
+**State machine:** `Entrance → Alive → Freeze → Done`
 
-### Approach B — Background process (experimental / fragile)
+#### Entrance (~600ms)
 
-```zsh
-# .zshrc
-rsfetch --animate --background &
-RSFETCH_PID=$!
+1. Border draws itself — top line sweeps left→right, sides drop down,
+   bottom sweeps left→right (like a CRT turning on)
+2. Stars fade in — random stars appear one by one over ~200ms
+3. Earth and moon fade in (dim → full brightness over ~150ms)
+4. OS title materializes — characters appear randomly, scattered, then
+   snap to their correct positions
+5. Status bar types itself in, character by character
+6. Footer fades in last, starts blinking
 
-preexec() {
-    [[ -n "$RSFETCH_PID" ]] && kill -USR1 $RSFETCH_PID 2>/dev/null
-    unset RSFETCH_PID
+#### Alive (indefinite, until keypress)
+
+Running simultaneously at ~30fps:
+- **Stars twinkle** — each frame, ~3-5 random stars change:
+  pick new brightness (dim/normal/bright), occasionally shift color
+  (white → pale blue → pale yellow → white)
+- **OS title gradient scrolls** — smooth RGB gradient mapped to each
+  character column, offset shifts each frame. One full cycle ~4s.
+- **Footer blinks** — "press any key to start" toggles visible/hidden
+  every ~1s (30 frames on, 30 frames off)
+- Everything else static (earth, moon, border, status bar)
+
+#### Freeze (~200ms, triggered by keypress)
+
+1. All stars flash bright for 2 frames
+2. OS title gradient locks to static theme color
+3. Footer stops blinking, text changes to "ready" for a beat
+4. Quick dissolve — all content fades: stars disappear first,
+   then earth/moon, then title, border last
+5. Or simpler: everything vanishes instantly, clean exit
+
+#### Done
+
+- Restore terminal (show cursor, cooked mode)
+- Print newline
+- Exit — shell prompt appears on fresh line below
+
+### Canvas system
+
+The entire boot screen is a 2D grid of cells:
+
+```rust
+struct Cell {
+    ch: char,
+    fg: (u8, u8, u8),  // RGB foreground
+    bg: Option<(u8, u8, u8)>,  // RGB background, None = transparent/default
+}
+
+struct Canvas {
+    width: u16,
+    height: u16,
+    cells: Vec<Cell>,
+    prev_cells: Vec<Cell>,  // for frame diffing
 }
 ```
 
-rsfetch forks to background immediately, shell prompt appears alongside
-the animated logo. Animation runs behind the prompt. zsh `preexec` hook
-signals rsfetch to stop before any command executes.
+Each frame:
+1. Clear canvas to default (space, no color)
+2. Draw layers back-to-front (starfield → earth → moon → title → border
+   → status → footer)
+3. Diff `cells` vs `prev_cells`
+4. Emit ANSI escape codes only for changed cells
+5. Flush stdout
+6. Swap `cells` into `prev_cells`
 
-**Pros:**
-- Prompt is available immediately while logo animates
-- Feels more "alive" — animation and prompt coexist
+Frame diffing keeps bandwidth low — most frames only a few stars change
+plus the gradient offset on the title. Maybe 50-100 cells change per
+frame out of ~1500 total.
 
-**Cons:**
-- Scrolling invalidates saved cursor coordinates
-- Cursor flicker from jumping between prompt and logo area
-- Race condition: typing during mid-frame-redraw causes garbled output
-- Terminal resize breaks coordinate math
-- Multiple tabs = multiple competing background processes
-- `TIOCSTI` (inject keypress back) is deprecated on newer kernels
+**Or** use blaeck's built-in rendering which already does diffing via
+LogUpdate. Build the frame as a single string with embedded ANSI color
+codes, pass it to `blaeck.render()`. Blaeck handles the cursor
+positioning and diff. This is simpler and stays inline.
 
-**Implementation:**
-1. Add `--background` flag
-2. Fork: parent exits immediately, child continues
-3. Save screen region coordinates (row/col of logo area)
-4. Animation loop:
-   - Save cursor position (`\033[s`)
-   - Move to logo area (`\033[<row>;<col>H`)
-   - Redraw logo frame
-   - Restore cursor position (`\033[u`)
-   - Sleep ~80ms
-5. Install `SIGUSR1` handler: render final frame, exit
-6. Also support timeout (e.g. 30s auto-stop)
+### Procedural starfield
 
-### Logo animation types
+```rust
+fn generate_starfield(width: u16, height: u16, density: f32) -> Vec<Star> {
+    // Seeded RNG for consistency (same stars each boot, different twinkle)
+    // density ~0.02 = ~2% of cells have a star
+    // Each star: position (x, y), base brightness, current brightness
+    // Star characters: weighted random from ['.', '·', '*', '✦', '⋅']
+    //   '.' most common (70%), '·' (15%), '*' (10%), '✦' (5%)
+}
+```
 
-Ideas for what "animated" means:
+Twinkle: each frame, pick 3-5 random stars. For each:
+- Shift brightness: cycle through dim(90,90,90) → normal(160,160,160)
+  → bright(255,255,255) → normal → dim
+- 10% chance: shift color slightly (add ±20 to blue channel for a
+  cool-star effect, or ±20 to red for a warm-star effect)
 
-- **Rotation/spin** — cycle through rotated versions of the logo
-- **Color cycling** — shift hue across the logo over time
-- **Pulse/breathe** — dim ↔ bright oscillation
-- **Typewriter reveal** — draw the logo character by character on first display
-- **Glitch** — random character substitution that settles into the final logo
-- **Matrix rain** — characters rain down and form the logo
+### Earth ASCII art
 
-### Prerequisites
+Bottom-right corner, ~12 lines tall, ~25 chars wide. Built from half-block
+characters (`▄▀█░▒▓`) with RGB colors:
 
-- Animation frame data: either procedurally generated (color shift, pulse)
-  or pre-rendered frame sets for each logo
-- Terminal capability detection: ensure raw mode and cursor positioning work
-- Graceful degradation: `--animate` with an unsupported terminal falls back
-  to static display
+- Ocean: deep blue (30, 60, 120)
+- Land: tan/brown (160, 130, 80), green (60, 120, 60)
+- Atmosphere edge: light blue glow (100, 150, 200)
+- Shadow side: very dark (20, 20, 30)
 
----
+Static — no animation needed. The curve of the earth is the visual anchor.
 
-## Animated inline images (terminal image protocols)
+### Moon ASCII art
 
-For terminals that support inline image rendering (iTerm2, kitty, WezTerm,
-Ghostty, etc.), display an animated GIF as the logo instead of ASCII art.
-The terminal handles the animation loop natively — rsfetch exits and the
-GIF keeps playing in the scrollback.
+Upper-left area, ~5 lines tall, ~8 chars wide. Simple circle with
+crater shading:
 
-### Supported protocols
+- Light side: bright grey (200, 200, 190)
+- Craters: darker grey (140, 130, 120)
+- Shadow: dark (80, 75, 70)
 
-| Terminal   | Protocol                          | Animated GIF support |
-|------------|-----------------------------------|----------------------|
-| iTerm2     | `\033]1337;File=inline=1;...`     | Yes                  |
-| Kitty      | Kitty graphics protocol           | Yes (frame-based)    |
-| WezTerm    | iTerm2 protocol (compatible)      | Yes                  |
-| Ghostty    | Kitty graphics protocol           | Yes                  |
-| Sixel      | Various (mlterm, foot, etc.)      | Partial              |
+Static.
 
-### Implementation
+### OS title — figlet-style text
 
-1. Detect terminal (check `$TERM_PROGRAM`, `$TERM`, kitty detection)
-2. Select protocol (iTerm2 vs kitty vs sixel vs none)
-3. If supported: encode animated GIF with the appropriate escape sequence,
-   emit it in the logo position. rsfetch exits, terminal keeps animating.
-4. If not supported: fall back to static ASCII art
+Use double-line box-drawing characters to render "MacOS 15.5" (or
+detected OS + version) in large centered text:
 
-### Logo sources
+```
+╔╦╗╔═╗╔═╗╔═╗╔═╗
+║║║╠═╣║  ║ ║╚═╗
+╩ ╩╩ ╩╚═╝╚═╝╚═╝
+    ╔╗ ╔═╗ ╔═╗
+    ║║ ╠╣  ╠╣
+    ╚╝ ╚   ╚
+```
 
-- Ship small animated GIFs for built-in logos (Apple spin, Tux wave, etc.)
-- `--logo-gif <path>` flag for custom animated GIFs
-- `logo_gif` config option
+Gradient: define a palette of ~12 RGB colors forming a smooth arc
+(e.g., warm amber → theme color → cool blue). Map each character column
+to a position in the palette based on `(column + frame_offset) % len`.
+Shift `frame_offset` by 1 each frame for scrolling effect.
+
+For other OSes: render "Ubuntu 24.04", "Arch Linux", etc. Use the same
+box-drawing font renderer.
+
+### Compact status bar
+
+Single line, top of the frame:
+
+```
+macOS 15.5 · M3 Pro · 29/36 GiB · 33d up
+```
+
+Assembled from SystemInfo fields. Separator: ` · ` (middle dot).
+Color: dim white. Static after entrance typing animation.
+
+### Footer
+
+Centered, below the scene:
+
+```
+press any key to start
+```
+
+Blinking: alternate between visible (dim white) and hidden (spaces)
+every ~1 second. Classic retro game prompt.
+
+### File structure
+
+```
+src/
+  boot/
+    mod.rs          — public API: run_boot_sequence()
+    canvas.rs       — Canvas struct, cell diffing, ANSI rendering
+    starfield.rs    — star generation, twinkle animation
+    earth.rs        — earth ASCII art data + RGB colors
+    moon.rs         — moon ASCII art data + RGB colors
+    title.rs        — figlet text renderer, gradient animation
+    border.rs       — box border drawing
+    status.rs       — compact status line builder
+    timeline.rs     — state machine (Entrance/Alive/Freeze/Done)
+                      entrance sub-animations, frame timing
+  main.rs           — add --boot flag, call boot::run_boot_sequence()
+  animate.rs        — keep existing color-cycle mode as --animate
+  ...existing files...
+```
+
+### CLI
+
+```
+rsfetch              # normal static fetch (unchanged)
+rsfetch --animate    # existing color-cycle animation (unchanged)
+rsfetch --boot       # new boot sequence mode
+```
+
+Config:
+```toml
+[boot]
+enabled = true       # use boot mode by default (for .zshrc)
+timeout = 120        # auto-exit after N seconds
+# theme = "sega"     # future: different boot themes
+```
+
+### Dependencies
+
+No new crates needed:
+- `libc` — already added, for raw mode + keypress detection
+- All rendering is raw ANSI escape codes or via blaeck's renderer
+- Figlet text: hand-coded box-drawing font, no external crate
+- RNG for starfield: use simple LCG or xorshift, no rand crate
+
+### Verification
+
+1. `cargo build` — compiles
+2. `rsfetch --boot` — border draws, stars appear, earth/moon render,
+   title materializes with gradient, footer blinks
+3. Press any key — freeze animation, clean exit, prompt appears
+4. `rsfetch` — normal mode still works, no regression
+5. `rsfetch --animate` — color cycle mode still works
+6. Test in multiple terminals: WezTerm, iTerm2, Terminal.app
+7. Test with different terminal widths (the canvas should adapt or
+   use a fixed width and center itself)

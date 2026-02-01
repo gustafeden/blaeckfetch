@@ -79,6 +79,10 @@ Options:
       --clear-cache      Clear the cache and re-gather all info
       --config <PATH>    Path to config file
       --print-config     Print default config to stdout
+      --boot             Boot sequence mode (retro console animation)
+      --left             Boot screen alignment: left (default)
+      --center           Boot screen alignment: center
+      --animate          Animate the logo (color cycling)
   -h, --help             Print help
   -V, --version          Print version
 ```
@@ -118,6 +122,48 @@ Or set it in the config:
 ```toml
 logo_file = "~/.config/rsfetch/logo.txt"
 ```
+
+### Boot mode
+
+A retro console-inspired boot animation. Shows a starfield with earth and moon by default, or a custom background image converted to half-block ASCII art.
+
+```sh
+rsfetch --boot
+rsfetch --boot --center
+```
+
+Add it to your shell RC file (`.zshrc`, `.bashrc`) for a startup splash:
+
+```sh
+rsfetch --boot
+```
+
+Press any key to dismiss, or it auto-closes after the configured timeout.
+
+#### Background image
+
+Point `[boot] image` at a PNG or JPEG to use it as the background. The image is converted to half-block characters with full RGB color. Stars in the image (isolated bright pixels against dark space) will twinkle.
+
+```toml
+[boot]
+image = "~/.config/rsfetch/space.png"
+stretch = "fill"        # fill, fit, or crop
+transparency = 0        # 0 = black bg, 1-255 = dark pixels transparent
+```
+
+Without an image, rsfetch renders a procedural starfield with earth and moon.
+
+#### Boot config reference
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `image` | string | — | Path to background image (PNG/JPEG) |
+| `stretch` | string | `"fill"` | `fill` (stretch), `fit` (letterbox), `crop` |
+| `transparency` | int | `0` | Dark pixel threshold: 0 = opaque black, 1-255 = transparent |
+| `width` | int | auto/68 | Canvas width in columns |
+| `height` | int | auto/23 | Canvas height in rows |
+| `timeout` | int | `120` | Seconds before auto-close |
+| `star_brightness` | int | `30` | Star detection threshold (0-255) |
 
 ### JSON output
 
@@ -212,6 +258,7 @@ Color values can be a named color (`"cyan"`, `"light_red"`, etc.) or an RGB arra
 - [blaeck](https://github.com/gustafeden/blaeck) — inline terminal UI framework
 - [sysinfo](https://crates.io/crates/sysinfo) — cross-platform system information
 - [clap](https://crates.io/crates/clap) — CLI argument parsing
+- [image](https://crates.io/crates/image) — image loading and processing (boot mode backgrounds)
 
 ## License
 
