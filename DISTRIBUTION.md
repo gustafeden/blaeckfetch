@@ -28,6 +28,8 @@ Output goes to `demo/` as `.gif` files. Embed in README.
 - [x] Create `PKGBUILD` for AUR
 - [x] Submit as `rsfetch-gustafeden-bin` (binary package)
 - [x] Users install with: `yay -S rsfetch-gustafeden-bin`
+- [x] Deletion request submitted for abandoned `rsfetch-bin` package (awaiting approval)
+- [ ] Once approved: migrate to `rsfetch-bin` for cleaner name
 
 ### crates.io
 
