@@ -42,7 +42,7 @@ Output goes to `demo/` as `.gif` files. Embed in README.
 ## GitHub Discoverability
 
 - [x] Add repo topics: `neofetch`, `fastfetch`, `system-info`, `fetch`, `terminal`, `rust`, `cli`
-- [ ] Add GIFs to README (the boot mode is the differentiator)
+- [x] Add GIFs to README (the boot mode is the differentiator)
 - [x] Submit PR to [awesome-fetch](https://github.com/beucismis/awesome-fetch) - [PR #188](https://github.com/beucismis/awesome-fetch/pull/188)
 
 ## Community Posts
