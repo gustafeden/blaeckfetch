@@ -47,8 +47,15 @@ Output goes to `demo/` as `.gif` files. Embed in README.
 
 ## Community Posts
 
-Waiting for name resolution ([Issue #7](https://github.com/Phate6660/rsfetch/issues/7)) before posting:
+**Ready to post** (prepared in `POSTS.md`, waiting for name resolution [Issue #7](https://github.com/Phate6660/rsfetch/issues/7)):
 
+- [ ] Show HN — "rsfetch – 57x faster than neofetch, with retro boot mode"
 - [ ] r/unixporn — boot mode screenshots/GIFs
-- [ ] r/rust — new Rust CLI tool
+- [ ] r/rust — technical post about performance + unique features
+- [ ] X/Twitter — short demo with GIF
+
+**Future posts:**
+
 - [ ] r/commandline — fetch tool comparison
+- [ ] Dev.to — "Building a System Fetch Tool 57x Faster Than Neofetch"
+- [ ] Hashnode — "How I Made a Terminal Tool 57x Faster by Switching to Rust"
