@@ -47,7 +47,7 @@ Output goes to `demo/` as `.gif` files. Embed in README.
 
 ## Community Posts
 
-Once README has GIFs:
+Waiting for name resolution ([Issue #7](https://github.com/Phate6660/rsfetch/issues/7)) before posting:
 
 - [ ] r/unixporn — boot mode screenshots/GIFs
 - [ ] r/rust — new Rust CLI tool
