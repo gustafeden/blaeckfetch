@@ -1,2 +1,4 @@
 /target
 /installer/target
+.DS_Store
+rsfetch-bin
