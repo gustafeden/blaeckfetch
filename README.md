@@ -23,6 +23,14 @@ A fast system fetch display for your terminal, written in Rust. Powered by [blae
 
 ## Install
 
+### macOS
+
+```sh
+brew tap gustafeden/tap && brew install rsfetch
+```
+
+### Linux / macOS (installer script)
+
 No Rust required — prebuilt binaries for macOS and Linux:
 
 ```sh
@@ -34,22 +42,22 @@ Supports macOS (Intel + Apple Silicon) and Linux (x86_64 + aarch64). Downloads a
 To install a specific version:
 
 ```sh
-RSFETCH_VERSION=0.1.0 curl -fsSL https://gustafeden.github.io/rsfetch/install.sh | bash
+RSFETCH_VERSION=0.3.0 curl -fsSL https://gustafeden.github.io/rsfetch/install.sh | bash
 ```
 
-Or with cargo (requires Rust):
-
-```sh
-cargo install --git https://github.com/gustafeden/rsfetch
-```
-
-Or build from source:
+### From source
 
 ```sh
 git clone https://github.com/gustafeden/rsfetch
 cd rsfetch
 cargo build --release
 ./target/release/rsfetch
+```
+
+Or with cargo:
+
+```sh
+cargo install --git https://github.com/gustafeden/rsfetch
 ```
 
 ## Usage
