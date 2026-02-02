@@ -29,6 +29,12 @@ A fast system fetch display for your terminal, written in Rust. Powered by [blae
 brew tap gustafeden/tap && brew install rsfetch
 ```
 
+### Arch Linux
+
+```sh
+yay -S rsfetch-gustafeden-bin
+```
+
 ### Linux / macOS (installer script)
 
 No Rust required — prebuilt binaries for macOS and Linux:
