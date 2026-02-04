@@ -24,7 +24,7 @@ logo = "magenta"
 
 ![splash — background image](https://gustafeden.github.io/blaeckfetch/demo/splash-image.gif)
 
-Animated starfield background with optional custom images. Press any key to dismiss. Add `blaeckfetch --splash` to your shell RC for a startup splash.
+Animated boot sequence with border entrance, background image, blinking footer, and collapse exit. Use a custom PNG/JPEG or the procedural starfield. Press any key to dismiss. Add `blaeckfetch --splash` to your shell RC for a startup splash.
 
 ## Performance
 
@@ -34,6 +34,10 @@ Animated starfield background with optional custom images. Press any key to dism
 | neofetch | ~400ms |
 
 ~57x faster than neofetch. Boot-cycle cache keeps static fields instant after the first run.
+
+## Terminal compatibility
+
+Works in any terminal that supports ANSI escape codes. Truecolor terminals (iTerm2, WezTerm, Kitty, Ghostty, Alacritty) get full 24-bit RGB. Terminals without truecolor (macOS Terminal.app) automatically fall back to 256-color approximation. VHS recordings are supported with full animation.
 
 ## Install
 

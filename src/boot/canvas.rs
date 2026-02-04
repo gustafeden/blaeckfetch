@@ -1,4 +1,5 @@
 use std::io::Write;
+use blaeck::{supports_truecolor, rgb_to_256};
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct Cell {
@@ -24,6 +25,7 @@ pub struct Canvas {
     prev_cells: Vec<Cell>,
     first_frame: bool,
     image_mask: Vec<bool>,
+    truecolor: bool,
 }
 
 impl Canvas {
@@ -36,6 +38,7 @@ impl Canvas {
             prev_cells: vec![Cell::default(); size],
             first_frame: true,
             image_mask: vec![false; size],
+            truecolor: supports_truecolor(),
         }
     }
 
@@ -143,10 +146,18 @@ impl Canvas {
                         let cell = self.cells[i];
 
                         let (r, g, b) = cell.fg;
-                        buf.push_str(&format!("\x1b[38;2;{};{};{}m", r, g, b));
+                        if self.truecolor {
+                            buf.push_str(&format!("\x1b[38;2;{};{};{}m", r, g, b));
+                        } else {
+                            buf.push_str(&format!("\x1b[38;5;{}m", rgb_to_256(r, g, b)));
+                        }
 
                         if let Some((br, bg, bb)) = cell.bg {
-                            buf.push_str(&format!("\x1b[48;2;{};{};{}m", br, bg, bb));
+                            if self.truecolor {
+                                buf.push_str(&format!("\x1b[48;2;{};{};{}m", br, bg, bb));
+                            } else {
+                                buf.push_str(&format!("\x1b[48;5;{}m", rgb_to_256(br, bg, bb)));
+                            }
                         } else {
                             buf.push_str("\x1b[49m");
                         }
@@ -177,14 +188,24 @@ impl Canvas {
                 let cell = self.cells[i];
 
                 let (r, g, b) = cell.fg;
-                if let Some((br, bg, bb)) = cell.bg {
-                    let _ = write!(
-                        stdout,
-                        "\x1b[38;2;{};{};{};48;2;{};{};{}m{}",
-                        r, g, b, br, bg, bb, cell.ch
-                    );
+                if self.truecolor {
+                    if let Some((br, bg, bb)) = cell.bg {
+                        let _ = write!(
+                            stdout,
+                            "\x1b[38;2;{};{};{};48;2;{};{};{}m{}",
+                            r, g, b, br, bg, bb, cell.ch
+                        );
+                    } else {
+                        let _ = write!(stdout, "\x1b[49;38;2;{};{};{}m{}", r, g, b, cell.ch);
+                    }
                 } else {
-                    let _ = write!(stdout, "\x1b[49;38;2;{};{};{}m{}", r, g, b, cell.ch);
+                    let fg_idx = rgb_to_256(r, g, b);
+                    if let Some((br, bg, bb)) = cell.bg {
+                        let bg_idx = rgb_to_256(br, bg, bb);
+                        let _ = write!(stdout, "\x1b[38;5;{};48;5;{}m{}", fg_idx, bg_idx, cell.ch);
+                    } else {
+                        let _ = write!(stdout, "\x1b[49;38;5;{}m{}", fg_idx, cell.ch);
+                    }
                 }
             }
             let _ = writeln!(stdout, "\x1b[0m");

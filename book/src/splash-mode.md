@@ -25,7 +25,9 @@ stretch = "fill"        # fill, fit, or crop
 
 Supported formats: PNG and JPEG.
 
-Images are converted to half-block characters (`▄▀█`) with full RGB color — every cell packs two vertical pixels using foreground and background colors. The conversion is pure Rust with no external tools.
+Images are converted to half-block characters (`▄▀█`) — every cell packs two vertical pixels using foreground and background colors. The conversion is pure Rust with no external tools.
+
+On truecolor terminals (iTerm2, WezTerm, Kitty, Ghostty, Alacritty), images render with full 24-bit RGB. Terminals without truecolor (e.g. macOS Terminal.app) automatically fall back to 256-color approximation.
 
 ### Stretch Modes
 

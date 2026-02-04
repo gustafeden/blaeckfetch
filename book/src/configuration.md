@@ -53,6 +53,10 @@ Colors can be specified as:
 color = [255, 165, 0]  # Orange
 ```
 
+### Terminal Compatibility
+
+Truecolor terminals (iTerm2, WezTerm, Kitty, Ghostty, Alacritty) render RGB values at full 24-bit precision. Terminals without truecolor support (e.g. macOS Terminal.app) automatically receive 256-color approximations. No configuration needed — detection is automatic.
+
 ## Full Example Config
 
 ```toml

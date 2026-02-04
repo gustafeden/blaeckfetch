@@ -14,6 +14,7 @@ Powered by [blaeck](https://github.com/gustafeden/blaeck) for rendering.
 - **Blazingly fast** - ~7ms execution time (vs ~400ms for neofetch)
 - **Boot-cycle cache** - Intelligent caching for even faster subsequent runs
 - **Minimal** - Clean, distraction-free output with essential system info
+- **Wide terminal support** - Truecolor (24-bit) with automatic 256-color fallback for older terminals
 
 ## Getting Started
 

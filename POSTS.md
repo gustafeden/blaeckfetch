@@ -16,9 +16,10 @@ Performance: ~7ms vs neofetch's ~400ms. Uses a boot-cycle cache for static field
 
 The splash mode is what makes it different - procedural starfield with earth/moon, or use your own background image. It converts images to half-block terminal characters with full RGB color, and supports iTerm2's inline image protocol for full-resolution rendering.
 
-Written in Rust, distributed via Homebrew and AUR. Currently working on getting it published to crates.io.
+Written in Rust, distributed via Homebrew and AUR.
 
-Demo GIFs in the README: https://github.com/gustafeden/blaeckfetch
+Repo: https://github.com/gustafeden/blaeckfetch
+Docs: https://gustafeden.github.io/blaeckfetch/
 
 Happy to answer questions about the implementation.
 
@@ -46,9 +47,11 @@ Install:
 ```
 brew tap gustafeden/tap && brew install blaeckfetch   # macOS
 yay -S blaeckfetch-bin                                # Arch Linux
+curl -fsSL https://gustafeden.github.io/blaeckfetch/install.sh | bash  # Linux/macOS
 ```
 
-Demo: https://github.com/gustafeden/blaeckfetch
+Repo: https://github.com/gustafeden/blaeckfetch
+Docs: https://gustafeden.github.io/blaeckfetch/
 
 [Image: demo/default.gif]
 [Image: demo/splash-image.gif]
@@ -79,9 +82,10 @@ I built blaeckfetch as a faster alternative to neofetch, with a unique retro spl
 **Unique feature:**
 Boot animation mode - no other fetch tool has this. Shows a procedural starfield (or custom background image) with configurable entrance/exit animations. Great for terminal startup splash screens.
 
-Distributed via Homebrew and AUR. Working on crates.io publishing.
+Distributed via Homebrew and AUR.
 
 Repo: https://github.com/gustafeden/blaeckfetch
+Docs: https://gustafeden.github.io/blaeckfetch/
 
 Built this to learn more about terminal rendering and syscall optimization. Happy to answer questions about the implementation.
 
