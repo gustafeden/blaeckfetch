@@ -58,7 +58,7 @@ curl -fsSL https://gustafeden.github.io/blaeckfetch/install.sh | bash
 ### From source
 
 ```sh
-cargo install --git https://github.com/gustafeden/blaeckfetch
+cargo install --git https://github.com/gustafeden/blaeckfetch blaeckfetch
 ```
 
 ## Usage

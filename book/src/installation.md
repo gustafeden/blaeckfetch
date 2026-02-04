@@ -44,5 +44,5 @@ The binary will be available at `target/release/blaeckfetch`.
 Alternatively, install directly from Git:
 
 ```bash
-cargo install --git https://github.com/gustafeden/blaeckfetch
+cargo install --git https://github.com/gustafeden/blaeckfetch blaeckfetch
 ```
