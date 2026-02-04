@@ -498,3 +498,38 @@ pub fn terminal_size() -> (u16, u16) {
         }
     }
 }
+
+/// Render splash screen inline (no raw mode, no cursor control).
+/// Used for terminals that don't support raw mode (VHS, dumb terminals).
+/// Renders the full UI: border, status bar, background, footer.
+pub fn run_inline(
+    info: &SystemInfo,
+    bg: Option<Vec<background::BgCell>>,
+    w: u16,
+    h: u16,
+) {
+    use std::io::{self, Write};
+
+    let mut canvas = Canvas::new(w, h);
+
+    // Draw background
+    if let Some(ref cells) = bg {
+        background::draw(&mut canvas, cells, w);
+    }
+
+    // Draw border (full progress)
+    border::draw_border(&mut canvas, BORDER_COLOR, 1.0);
+
+    // Draw status bar
+    let status_text = status::build_line(info);
+    status::draw(&mut canvas, &status_text, 1, STATUS_COLOR, 1.0);
+
+    // Draw footer
+    let footer_text = "press any key to start";
+    let footer_len = footer_text.chars().count() as u16;
+    let footer_x = (w - footer_len) / 2;
+    canvas.put_str(footer_x, h - 2, footer_text, FOOTER_COLOR, None);
+
+    // Render canvas inline to stdout
+    canvas.render_inline(&mut io::stdout());
+}

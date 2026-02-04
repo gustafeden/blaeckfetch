@@ -376,3 +376,30 @@ pub fn draw(canvas: &mut Canvas, cells: &[BgCell], w: u16) {
         canvas.set(col, row, cell.ch, cell.fg, cell.bg);
     }
 }
+
+/// Render background cells directly to stdout as inline ANSI text.
+/// No cursor positioning, no raw mode — just prints lines sequentially.
+pub fn render_inline(cells: &[BgCell], w: u16) {
+    use std::io::{self, Write};
+    let mut stdout = io::stdout();
+    let h = cells.len() / w as usize;
+
+    for row in 0..h {
+        let start = row * w as usize;
+        let end = start + w as usize;
+        for cell in &cells[start..end] {
+            // Set fg color
+            let (fr, fg, fb) = cell.fg;
+            if let Some((br, bg, bb)) = cell.bg {
+                // Both fg and bg
+                let _ = write!(stdout, "\x1b[38;2;{};{};{};48;2;{};{};{}m{}", fr, fg, fb, br, bg, bb, cell.ch);
+            } else {
+                // fg only
+                let _ = write!(stdout, "\x1b[38;2;{};{};{}m{}", fr, fg, fb, cell.ch);
+            }
+        }
+        // Reset and newline
+        let _ = writeln!(stdout, "\x1b[0m");
+    }
+    let _ = stdout.flush();
+}

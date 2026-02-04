@@ -218,8 +218,12 @@ fn main() -> std::io::Result<()> {
                     .map(|(cw, ch)| boot::background::fit_to_terminal_with_chrome(cw, ch, term_w, term_h, 2, 6))
                     .unwrap_or((68, 23))
             } else if render_mode == boot::image_proto::RenderMode::Inline {
-                // Inline mode (VHS): use fixed defaults since terminal_size() may be unreliable
-                (68, 23)
+                // Inline mode (VHS): derive from image aspect ratio with a fixed virtual terminal
+                // since terminal_size() is unreliable in non-interactive environments.
+                // Use 80x24 as a conservative virtual terminal size.
+                boot::background::image_cell_size(img_path)
+                    .map(|(cw, ch)| boot::background::fit_to_terminal_with_chrome(cw, ch, 80, 24, 2, 6))
+                    .unwrap_or((68, 23))
             } else {
                 boot::background::image_dimensions(img_path).unwrap_or((68, 23))
             };

@@ -40,6 +40,7 @@ pub fn by_name(name: &str) -> Logo {
         "arch" => arch(),
         "debian" => debian(),
         "fedora" => fedora(),
+        "moon" => moon(),
         "none" | "off" => Logo { art: "", name: "none" },
         _ => detect(),
     }
@@ -206,6 +207,111 @@ pub fn fedora() -> Logo {
     }
 }
 
+pub fn moon() -> Logo {
+    Logo {
+        name: "moon",
+        art: "  ██████
+█████▒███
+██████████
+█████████
+  ██████",
+    }
+}
+
+/// Moon as a grid of cells with per-pixel RGB colors — identical to the splash mode moon.
+/// Uses the exact same algorithm as boot/moon.rs.
+/// Returns rows of (Option<(u8,u8,u8)>, char) — None means empty space.
+pub fn moon_grid() -> Vec<Vec<Option<(u8, u8, u8)>>> {
+    const MOON_LIGHT: (f32, f32, f32) = (200.0, 200.0, 190.0);
+    const MOON_CRATER: (f32, f32, f32) = (130.0, 125.0, 115.0);
+    const MOON_SHADOW: (f32, f32, f32) = (70.0, 65.0, 60.0);
+
+    // Exact boot mode parameters: canvas 68x23
+    let bw: f32 = 68.0;
+    let bh: f32 = 23.0;
+    let cx = bw * 0.15;
+    let cy = bh * 0.26;
+    let radius = bh * 0.11;
+    let r2 = radius * radius;
+
+    let y_min = (cy - radius - 1.0).max(0.0) as i16;
+    let y_max = ((cy + radius + 1.0) as i16).min(bh as i16 - 1);
+    let x_min = (cx - radius * 2.0 - 1.0).max(0.0) as i16;
+    let x_max = ((cx + radius * 2.0 + 1.0) as i16).min(bw as i16 - 1);
+
+    // Find the leftmost filled column
+    let mut global_min_x = x_max;
+    for iy in y_min..=y_max {
+        for ix in x_min..=x_max {
+            let fx = (ix as f32 - cx) / 2.0;
+            let fy = iy as f32 - cy;
+            if fx * fx + fy * fy <= r2 && ix < global_min_x {
+                global_min_x = ix;
+            }
+        }
+    }
+
+    let mut rows = Vec::new();
+    for iy in y_min..=y_max {
+        let fy = iy as f32 - cy;
+        let mut row = Vec::new();
+        let mut has_pixel = false;
+
+        for ix in global_min_x..=x_max {
+            let fx = (ix as f32 - cx) / 2.0;
+            let dist2 = fx * fx + fy * fy;
+
+            if dist2 <= r2 {
+                has_pixel = true;
+                let light = 1.0 - ((fx + fy * 0.3) / radius * 0.4 + 0.1).max(0.0).min(1.0) * 0.7;
+                let is_crater = moon_crater(fx, fy, radius);
+
+                let base = if light < 0.4 {
+                    MOON_SHADOW
+                } else if is_crater {
+                    MOON_CRATER
+                } else {
+                    MOON_LIGHT
+                };
+
+                let r = (base.0 * light).min(255.0) as u8;
+                let g = (base.1 * light).min(255.0) as u8;
+                let b = (base.2 * light).min(255.0) as u8;
+
+                row.push(Some((r, g, b)));
+            } else {
+                row.push(None);
+            }
+        }
+
+        if has_pixel {
+            // Trim trailing empty cells
+            while row.last() == Some(&None) {
+                row.pop();
+            }
+            rows.push(row);
+        }
+    }
+
+    rows
+}
+
+fn moon_crater(fx: f32, fy: f32, radius: f32) -> bool {
+    let craters: &[(f32, f32, f32)] = &[
+        (0.2, -0.25, 0.18),
+        (-0.25, 0.15, 0.12),
+        (0.05, 0.3, 0.10),
+    ];
+    for &(cx, cy, cr) in craters {
+        let dx = fx / radius - cx;
+        let dy = fy / radius - cy;
+        if dx * dx + dy * dy < cr * cr {
+            return true;
+        }
+    }
+    false
+}
+
 #[allow(dead_code)]
 pub fn generic() -> Logo {
     Logo {
@@ -220,5 +326,5 @@ pub fn generic() -> Logo {
 
 #[allow(dead_code)]
 pub fn available() -> &'static [&'static str] {
-    &["apple", "linux", "ubuntu", "arch", "debian", "fedora", "none"]
+    &["apple", "linux", "ubuntu", "arch", "debian", "fedora", "moon", "none"]
 }

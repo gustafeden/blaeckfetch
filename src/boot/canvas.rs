@@ -167,4 +167,28 @@ impl Canvas {
         self.prev_cells.copy_from_slice(&self.cells);
         self.first_frame = false;
     }
+
+    /// Render the entire canvas inline to stdout (no cursor positioning).
+    /// Used for VHS and other terminals that don't support raw mode.
+    pub fn render_inline(&self, stdout: &mut impl Write) {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let i = self.idx(x, y);
+                let cell = self.cells[i];
+
+                let (r, g, b) = cell.fg;
+                if let Some((br, bg, bb)) = cell.bg {
+                    let _ = write!(
+                        stdout,
+                        "\x1b[38;2;{};{};{};48;2;{};{};{}m{}",
+                        r, g, b, br, bg, bb, cell.ch
+                    );
+                } else {
+                    let _ = write!(stdout, "\x1b[49;38;2;{};{};{}m{}", r, g, b, cell.ch);
+                }
+            }
+            let _ = writeln!(stdout, "\x1b[0m");
+        }
+        let _ = stdout.flush();
+    }
 }
