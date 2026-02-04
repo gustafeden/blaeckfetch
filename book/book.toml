@@ -1,0 +1,12 @@
+[book]
+title = "blaeckfetch"
+description = "A fast, minimalist system fetch for your terminal"
+authors = ["Gustaf Edén"]
+language = "en"
+src = "src"
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/gustafeden/blaeckfetch"
+site-url = "/blaeckfetch/"
