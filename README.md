@@ -21,7 +21,7 @@ logo = "magenta"
 
 ## Splash mode
 
-Animated sequence inspired by retro SEGA intro, background image, blinking footer, and collapse exit. Use a custom PNG/JPEG or it will fallback to an ASCII procedural starfield. Press any key to dismiss. Add `blaeckfetch --splash` to your shell RC for a startup splash.
+Animated sequence inspired by retro console-style intro, background image, blinking footer, and collapse exit. Use a custom PNG/JPEG or it will fallback to an ASCII procedural starfield. Press any key to dismiss. Add `blaeckfetch --splash` to your shell RC for a startup splash.
 
 
 ![splash — background image](https://gustafeden.github.io/blaeckfetch/demo/splash-image.gif)

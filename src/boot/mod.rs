@@ -155,7 +155,7 @@ pub fn run(
     // --- Setup ---
     let mut canvas = Canvas::new(bw, bh);
     let image_mode = image_mode_flag;
-    let mut image_emitted = false;
+    let mut image_emit_count: u32 = 0;
 
     let seed = std::process::id();
     let mut rng_state = rng::Rng::new(seed);
@@ -195,10 +195,12 @@ pub fn run(
         }
 
         // Check for keypress (non-blocking) — skip in VHS mode
+        // Ignore stray input during entrance to avoid premature collapse from
+        // terminal startup escape sequences in the tty buffer.
         if !vhs_mode {
             let mut buf = [0u8; 64];
             let n = unsafe { libc::read(fd, buf.as_mut_ptr() as *mut libc::c_void, buf.len()) };
-            if n > 0 {
+            if n > 0 && !matches!(timeline.phase, Phase::Entrance) {
                 timeline.trigger_freeze();
             }
         } else {
@@ -261,7 +263,7 @@ pub fn run(
                         raw_image = Some(new_bytes);
                     }
                 }
-                image_emitted = false;
+                image_emit_count = 0;
             }
         }
 
@@ -273,8 +275,16 @@ pub fn run(
         if !collapsing {
             // --- Normal rendering (Entrance / Alive / Flash) ---
 
-            // Emit inline image if in image mode
-            if image_mode && !image_emitted {
+            // Emit inline image if in image mode.
+            // Re-emit a few times during entrance to work around terminals
+            // that aren't ready to render images immediately at startup.
+            let should_emit = image_mode && match image_emit_count {
+                0 => true,
+                1 => timeline.frame >= 3,  // ~100ms retry
+                2 => timeline.frame >= 6,  // ~200ms retry
+                _ => false,
+            };
+            if should_emit {
                 if let Some(ref raw_bytes) = raw_image {
                     // Interior area: same region as background::draw uses
                     // rows 3..bh-2, cols 1..bw-1
@@ -292,7 +302,7 @@ pub fn run(
                         origin_row + img_y,
                         origin_col + img_x,
                     );
-                    image_emitted = true;
+                    image_emit_count += 1;
                 }
             }
 
@@ -523,14 +533,20 @@ fn query_cursor_row(fd: i32) -> Option<u16> {
 }
 
 pub fn terminal_size() -> (u16, u16) {
-    unsafe {
-        let mut ws: libc::winsize = std::mem::zeroed();
-        if libc::ioctl(1, libc::TIOCGWINSZ, &mut ws) == 0 {
-            (ws.ws_col, ws.ws_row)
-        } else {
-            (80, 24)
+    // Retry briefly if terminal reports zero dimensions (startup race with WezTerm)
+    for _ in 0..4 {
+        unsafe {
+            let mut ws: libc::winsize = std::mem::zeroed();
+            if libc::ioctl(1, libc::TIOCGWINSZ, &mut ws) == 0
+                && ws.ws_col > 0
+                && ws.ws_row > 0
+            {
+                return (ws.ws_col, ws.ws_row);
+            }
         }
+        std::thread::sleep(std::time::Duration::from_millis(25));
     }
+    (80, 24)
 }
 
 /// Render splash screen inline (no raw mode, no cursor control).
