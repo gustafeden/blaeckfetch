@@ -13,6 +13,15 @@ blaeckfetch --splash --center
 
 Add it to your shell RC file (`.zshrc`, `.bashrc`) for a startup splash.
 
+Put it near the top of the file, before slower init (nvm, plugin managers, etc.), so the splash appears immediately instead of after the rest of the RC has loaded. If `PATH` isn't set up yet at that point, call it by full path:
+
+```bash
+# ~/.zshrc
+[[ -x "$HOME/.cargo/bin/blaeckfetch" ]] && "$HOME/.cargo/bin/blaeckfetch" --splash
+```
+
+Keys typed before the splash appears (while the terminal is still starting) are handed back to the shell when it exits, so they land at your prompt instead of being lost.
+
 ## Background Images
 
 Add a background image in your config:

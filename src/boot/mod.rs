@@ -84,6 +84,7 @@ pub fn run(
     }
 
     let mut stdout = io::stdout();
+    let mut typeahead: Vec<u8> = Vec::new();
 
     let mut origin_row: u16 = 1;
     let mut origin_col: u16 = 1;
@@ -104,7 +105,9 @@ pub fn run(
         let _ = stdout.flush();
 
         // Query cursor row via DSR (requires temporary raw mode for reading response)
-        let cursor_row = query_cursor_row(fd).unwrap_or(term_height);
+        let (cursor_row, pending) = query_cursor_row(fd);
+        typeahead = pending;
+        let cursor_row = cursor_row.unwrap_or(term_height);
         origin_row = if cursor_row >= reserve {
             cursor_row - reserve + 1 + PAD_TOP
         } else {
@@ -415,6 +418,7 @@ pub fn run(
         unsafe {
             libc::tcsetattr(fd, libc::TCSANOW, &orig);
         }
+        reinject_input(fd, &typeahead);
     }
 
     // Position cursor right after the final box
@@ -480,13 +484,18 @@ fn draw_collapsed_frame(canvas: &mut Canvas, status_text: &str, progress: f32, b
 }
 
 /// Query current cursor row using DSR (Device Status Report).
-fn query_cursor_row(fd: i32) -> Option<u16> {
+///
+/// Anything the user typed before the query (typeahead while the shell rc was
+/// still loading) arrives ahead of the `ESC[row;colR` reply. Those bytes are
+/// skipped while scanning and returned so the caller can hand them back to the
+/// shell instead of losing them or misparsing the reply.
+fn query_cursor_row(fd: i32) -> (Option<u16>, Vec<u8>) {
     use std::io::Read;
 
     let orig = unsafe {
         let mut t: libc::termios = std::mem::zeroed();
         if libc::tcgetattr(fd, &mut t) != 0 {
-            return None;
+            return (None, Vec::new());
         }
         let orig = t;
         t.c_lflag &= !(libc::ICANON | libc::ECHO);
@@ -500,18 +509,22 @@ fn query_cursor_row(fd: i32) -> Option<u16> {
     let _ = write!(stdout, "\x1b[6n");
     let _ = stdout.flush();
 
-    let mut buf = [0u8; 32];
-    let mut len = 0usize;
+    let mut buf: Vec<u8> = Vec::with_capacity(64);
+    let mut row = None;
+    let mut reply_start = 0usize;
     let mut tty_read = unsafe { std::fs::File::from_raw_fd(fd) };
 
-    for _ in 0..32 {
+    for _ in 0..512 {
         let mut byte = [0u8; 1];
         match tty_read.read(&mut byte) {
             Ok(1) => {
-                buf[len] = byte[0];
-                len += 1;
+                buf.push(byte[0]);
                 if byte[0] == b'R' {
-                    break;
+                    if let Some((start, r)) = parse_dsr_reply(&buf) {
+                        reply_start = start;
+                        row = Some(r);
+                        break;
+                    }
                 }
             }
             _ => break,
@@ -524,12 +537,34 @@ fn query_cursor_row(fd: i32) -> Option<u16> {
         libc::tcsetattr(fd, libc::TCSANOW, &orig);
     }
 
-    let s = std::str::from_utf8(&buf[..len]).ok()?;
-    let s = s.strip_prefix("\x1b[")?;
-    let s = s.strip_suffix('R')?;
-    let mut parts = s.split(';');
-    let row: u16 = parts.next()?.parse().ok()?;
-    Some(row)
+    let typeahead = if row.is_some() {
+        buf.truncate(reply_start);
+        buf
+    } else {
+        buf
+    };
+    (row, typeahead)
+}
+
+/// Find a trailing `ESC[row;colR` in `buf`; returns (start index, row).
+fn parse_dsr_reply(buf: &[u8]) -> Option<(usize, u16)> {
+    let start = buf.windows(2).rposition(|w| w == b"\x1b[")?;
+    let body = std::str::from_utf8(&buf[start + 2..buf.len() - 1]).ok()?;
+    let (r, c) = body.split_once(';')?;
+    c.parse::<u16>().ok()?;
+    Some((start, r.parse().ok()?))
+}
+
+/// Push bytes back into the tty input queue so the shell sees them as typed.
+/// Best effort: TIOCSTI may be disabled (e.g. Linux `dev.tty.legacy_tiocsti=0`).
+fn reinject_input(fd: i32, bytes: &[u8]) {
+    for b in bytes {
+        unsafe {
+            if libc::ioctl(fd, libc::TIOCSTI as _, b as *const u8) != 0 {
+                return;
+            }
+        }
+    }
 }
 
 pub fn terminal_size() -> (u16, u16) {
@@ -582,4 +617,20 @@ pub fn run_inline(
 
     // Render canvas inline to stdout
     canvas.render_inline(&mut io::stdout());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_dsr_reply;
+
+    #[test]
+    fn dsr_reply_after_typeahead() {
+        assert_eq!(parse_dsr_reply(b"\x1b[24;1R"), Some((0, 24)));
+        assert_eq!(parse_dsr_reply(b"ls\x1b[31;5R"), Some((2, 31)));
+        // arrow key typed before the query, then the reply
+        assert_eq!(parse_dsr_reply(b"\x1b[A\x1b[7;1R"), Some((3, 7)));
+        // user typed a capital R before the reply arrived
+        assert_eq!(parse_dsr_reply(b"R"), None);
+        assert_eq!(parse_dsr_reply(b"\x1b[AR"), None);
+    }
 }
